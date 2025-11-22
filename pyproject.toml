@@ -1,0 +1,17 @@
+[project]
+name = "saol-mcp-server"
+version = "0.1.0"
+description = "The Nervous System Interface for SAOL Agents"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp",
+    "fastapi",
+    "uvicorn",
+    "firebase-admin",
+    "neo4j"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

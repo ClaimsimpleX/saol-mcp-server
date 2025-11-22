@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+.DS_Store
+*.log
+output.txt
+inspect_mcp.py
+token.txt
+secret_pass.txt
+secret_uri.txt
+secret_user.txt
