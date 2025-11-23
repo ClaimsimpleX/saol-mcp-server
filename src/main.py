@@ -5,11 +5,39 @@ from mcp.types import Tool, TextContent, ImageContent, EmbeddedResource
 import uvicorn
 import asyncio
 
-# Initialize FastAPI
-app = FastAPI(title="SAOL MCP Server", version="1.0.0")
-
 # Initialize MCP Server (FastMCP)
 mcp = FastMCP("saol-mcp-server")
+
+# Import Tools
+from src.tools.firebase_ops import init_firebase, read_queue, update_ticket
+from src.tools.graph_ops import init_neo4j, cypher_query
+from src.tools.drive_ops import upload_file, delete_file
+from src.tools.telemetry_ops import log_mission_receipt
+from src.middleware.guardian import guardian_middleware
+from src.middleware.telemetry import telemetry_middleware
+
+# Register Tools with Middleware (Chain: Telemetry -> Guardian -> Tool)
+# Telemetry should wrap Guardian so it captures the Guardian's block as a result?
+# Or Guardian wraps Telemetry?
+# If Guardian blocks, the tool isn't called. Telemetry should probably still record the attempt?
+# If Telemetry wraps Guardian: Telemetry(Guardian(Tool))
+#   -> Telemetry starts
+#   -> Guardian checks
+#   -> Tool runs (or Guardian raises)
+#   -> Telemetry ends (records time)
+# This seems correct. We want to measure total time including policy check.
+
+def apply_middleware(tool_func):
+    return telemetry_middleware(guardian_middleware(tool_func))
+
+mcp.tool()(apply_middleware(init_firebase))
+mcp.tool()(apply_middleware(read_queue))
+mcp.tool()(apply_middleware(update_ticket))
+mcp.tool()(apply_middleware(init_neo4j))
+mcp.tool()(apply_middleware(cypher_query))
+mcp.tool()(apply_middleware(upload_file))
+mcp.tool()(apply_middleware(delete_file))
+mcp.tool()(apply_middleware(log_mission_receipt))
 
 # Define Health Check Tool
 @mcp.tool()
@@ -17,19 +45,10 @@ async def health_check() -> str:
     """Performs a health check and returns a green dot status."""
     return "Green Dot: Online. Nervous System Interface is active."
 
-# Initialize SSE Transport
-sse = SseServerTransport("/sse")
-
-@app.get("/sse")
-async def handle_sse(request: Request):
-    async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
-        await mcp.run(streams[0], streams[1], mcp.create_initialization_options())
-
-@app.post("/sse")
-async def handle_sse_post(request: Request):
-    async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
-        await mcp.run(streams[0], streams[1], mcp.create_initialization_options())
+# Expose the SSE app for uvicorn
+app = mcp.sse_app
 
 if __name__ == "__main__":
     print("SAOL MCP Server Starting...")
+    # Use the internal SSE app provided by FastMCP
     uvicorn.run(app, host="0.0.0.0", port=8080)

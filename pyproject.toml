@@ -9,7 +9,9 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "firebase-admin",
-    "neo4j"
+    "neo4j",
+    "google-api-python-client",
+    "google-auth"
 ]
 
 [build-system]

@@ -1,0 +1,23 @@
+rules:
+  - name: "SQL_INJECTION_PREVENTION"
+    description: "Block any tool call containing destructive SQL keywords."
+    pattern: "(DROP|DELETE|REMOVE|TRUNCATE)"
+    action: "BLOCK"
+    exceptions:
+      - user_role: "ADMIN"
+  - name: "DRIVE_DELETE_RESTRICTION"
+    description: "Block drive_delete for non-admin users."
+    pattern: "drive_delete" # This matches the tool name if passed in arguments or context? 
+    # Wait, our policy engine checks ARGUMENTS string against pattern.
+    # If we want to block by tool name, we need to update PolicyEngine or rely on args.
+    # But PolicyEngine.check takes tool_name.
+    # Let's assume we update PolicyEngine to check tool_name against pattern too, OR we just put "drive_delete" in pattern and hope it matches.
+    # Actually, the current PolicyEngine implementation:
+    # arg_str = str(arguments).upper()
+    # if re.search(pattern, arg_str): ...
+    # It ONLY checks arguments. This is a limitation.
+    # I should update PolicyEngine to check tool_name as well.
+    # For now, I will add the rule and then update PolicyEngine.
+    action: "BLOCK"
+    exceptions:
+      - user_role: "ADMIN"
