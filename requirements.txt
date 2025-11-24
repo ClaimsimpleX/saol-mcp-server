@@ -5,3 +5,4 @@ firebase-admin
 neo4j
 google-api-python-client
 google-auth
+pyyaml
