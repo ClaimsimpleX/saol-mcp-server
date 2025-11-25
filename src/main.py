@@ -45,10 +45,19 @@ async def health_check() -> str:
     """Performs a health check and returns a green dot status."""
     return "Green Dot: Online. Nervous System Interface is active."
 
-# Expose the SSE app for uvicorn
-app = mcp.sse_app
+# Create a parent FastAPI app to handle routing
+app = FastAPI()
+
+# Add Health Check Route
+@app.get("/status")
+async def handle_status():
+    return {"status": "online", "message": "Green Dot: Online"}
+
+# Mount the MCP SSE app
+# mcp.sse_app() returns an app that serves /sse and /messages
+# Mounting it at /sse means the full path will be /sse/sse
+app.mount("/sse", mcp.sse_app())
 
 if __name__ == "__main__":
     print("SAOL MCP Server Starting...")
-    # Use the internal SSE app provided by FastMCP
     uvicorn.run(app, host="0.0.0.0", port=8080)
